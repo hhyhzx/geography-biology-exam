@@ -372,7 +372,7 @@ function selectAnswer(i, el) {
   } else {
     el.classList.add('wrong');
     markError(q.id);
-    document.getElementById('feedback').innerHTML = `<div class="expl wrong">❌ 回答错误！正确答案是 <b>${['A','B','C','D'][q.ans]}</b><br>${highlightKeywords(q.expl)}</div>`;
+    document.getElementById('feedback').innerHTML = `<div class="expl wrong">正确答案是 <b>${['A','B','C','D'][q.ans]}</b><br>${highlightKeywords(q.expl)}</div>`;
   }
   document.getElementById('nextArea').innerHTML = `
     <button class="next-btn" onclick="nextQuestion()">
