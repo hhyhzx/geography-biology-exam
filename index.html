@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+<title>地理生物刷题练习</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--primary:#4A90D9;--success:#34C759;--danger:#FF3B30;--warning:#FF9500;--bg:#F2F3F7;--card:#fff;--text:#1C1C1E;--text2:#8E8E93;--border:#E5E5EA}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-tap-highlight-color:transparent;overflow-x:hidden}
+.app{max-width:500px;margin:0 auto;padding-bottom:70px}
+.header{background:var(--primary);color:#fff;padding:14px 16px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.12);display:flex;justify-content:space-between;align-items:center}
+.header h1{font-size:18px;font-weight:600}
+.header .badge{font-size:12px;background:rgba(255,255,255,.2);padding:4px 10px;border-radius:12px}
+.filter-bar{display:flex;gap:8px;padding:12px 16px;overflow-x:auto;background:#fff;border-bottom:1px solid var(--border);position:sticky;top:48px;z-index:99}
+.filter-bar::-webkit-scrollbar{display:none}
+.filter-chip{padding:8px 16px;border-radius:20px;border:1.5px solid var(--border);font-size:13px;white-space:nowrap;cursor:pointer;transition:.2s;background:#fff;flex-shrink:0}
+.filter-chip.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.card{background:var(--card);margin:12px 16px;border-radius:16px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.card .q-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.card .q-num{font-size:13px;color:var(--text2)}
+.card .q-subject{font-size:12px;padding:3px 8px;border-radius:6px;font-weight:500}
+.card .q-subject.geo{background:#E8F0FE;color:#4A90D9}
+.card .q-subject.bio{background:#E8F8E8;color:#34C759}
+.card .q-text{font-size:16px;line-height:1.6;margin-bottom:16px;font-weight:500}
+.card .options{display:flex;flex-direction:column;gap:10px}
+.card .opt{padding:14px 16px;border:2px solid var(--border);border-radius:12px;font-size:15px;cursor:pointer;transition:.2s;display:flex;align-items:center;gap:10px;user-select:none}
+.card .opt:active{transform:scale(.98)}
+.card .opt .letter{width:28px;height:28px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+.card .opt.correct{border-color:var(--success);background:#E8F8E8}
+.card .opt.correct .letter{background:var(--success);color:#fff}
+.card .opt.wrong{border-color:var(--danger);background:#FFF0F0}
+.card .opt.wrong .letter{background:var(--danger);color:#fff}
+.card .opt.disabled{pointer-events:none;opacity:.8}
+.card .expl{border-radius:12px;padding:14px;margin-top:12px;font-size:14px;line-height:1.6}
+.card .expl.correct{background:#E8F8E8;color:#1D7A3A}
+.card .expl.wrong{background:#FFF0F0;color:#B71C1C}
+.card .next-btn{display:block;width:100%;padding:12px;background:var(--primary);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;margin-top:16px;cursor:pointer}
+.card .next-btn:active{opacity:.8}
+.empty{text-align:center;padding:40px 20px;color:var(--text2)}
+.empty .icon{font-size:48px;margin-bottom:12px}
+.empty p{font-size:15px;line-height:1.6}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 16px}
+.stat-card{background:var(--card);border-radius:14px;padding:16px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.stat-card .num{font-size:32px;font-weight:700}
+.stat-card .num.green{color:var(--success)}
+.stat-card .num.red{color:var(--danger)}
+.stat-card .num.blue{color:var(--primary)}
+.stat-card .label{font-size:12px;color:var(--text2);margin-top:4px}
+.progress-bar{height:6px;background:var(--border);border-radius:3px;margin:8px 16px;overflow:hidden}
+.progress-bar .fill{height:100%;background:var(--primary);border-radius:3px;transition:.3s}
+.btn-row{display:flex;gap:10px;padding:0 16px;margin-top:12px}
+.btn{flex:1;padding:12px;border-radius:10px;border:none;font-size:14px;font-weight:600;cursor:pointer;text-align:center}
+.btn.primary{background:var(--primary);color:#fff}
+.btn.outline{background:#fff;color:var(--danger);border:1.5px solid var(--danger)}
+.btn:active{opacity:.8}
+.tab-bar{position:fixed;bottom:0;left:0;right:0;background:#fff;display:flex;border-top:1px solid var(--border);z-index:200;padding-bottom:env(safe-area-inset-bottom,0);max-width:500px;margin:0 auto}
+.tab-item{flex:1;display:flex;flex-direction:column;align-items:center;padding:8px 0 6px;cursor:pointer;color:var(--text2);transition:.2s;font-size:11px;gap:2px}
+.tab-item .tab-icon{font-size:22px}
+.tab-item.active{color:var(--primary)}
+.set-list .set-item{padding:16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer}
+.set-item:active{background:var(--bg)}
+.set-item .set-info{flex:1}
+.set-item .set-name{font-size:15px;font-weight:500}
+.set-item .set-detail{font-size:12px;color:var(--text2);margin-top:3px}
+.set-item .arrow{font-size:18px;color:var(--text2)}
+.mode-options{display:flex;gap:8px;margin-bottom:16px}
+.mode-chip{flex:1;text-align:center;padding:10px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;transition:.2s}
+.mode-chip.active{border-color:var(--primary);color:var(--primary);background:#E8F0FE}
+.page{display:none}
+.page.active{display:block}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>📝 地理生物刷题</h1>
+    <span class="badge" id="headerBadge">共126题</span>
+  </div>
+
+  <!-- ===== PAGE: 刷题首页 ===== -->
+  <div class="page active" id="page-home">
+    <div class="filter-bar" id="filterBar"></div>
+    <div id="homeContent"></div>
+    <div class="btn-row">
+      <button class="btn outline" onclick="clearErrors()">🗑 清空纠错本</button>
+      <button class="btn primary" onclick="reviewErrors()">📖 复习错题</button>
+    </div>
+  </div>
+
+  <!-- ===== PAGE: 答题页 ===== -->
+  <div class="page" id="page-quiz">
+    <div id="quizContent"></div>
+  </div>
+
+  <!-- ===== PAGE: 纠错本 ===== -->
+  <div class="page" id="page-errors">
+    <div style="padding:16px">
+      <h2 style="font-size:18px;margin-bottom:4px">📕 纠错本</h2>
+      <p style="color:var(--text2);font-size:13px;margin-bottom:12px">做错的题目会自动收集到这里，反复练习</p>
+    </div>
+    <div id="errorList"></div>
+    <div class="btn-row" style="margin-bottom:16px">
+      <button class="btn outline" onclick="clearErrors()">🗑 清空纠错本</button>
+    </div>
+  </div>
+
+  <!-- ===== PAGE: 统计 ===== -->
+  <div class="page" id="page-stats">
+    <div style="padding:16px">
+      <h2 style="font-size:18px;margin-bottom:4px">📊 学习统计</h2>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="num blue" id="statTotal">126</div><div class="label">总题数</div></div>
+      <div class="stat-card"><div class="num green" id="statDone">0</div><div class="label">已刷题数</div></div>
+      <div class="stat-card"><div class="num green" id="statCorrect">0</div><div class="label">正确数</div></div>
+      <div class="stat-card"><div class="num red" id="statErrors">0</div><div class="label">错题数</div></div>
+    </div>
+    <div class="progress-bar" style="margin:12px 16px"><div class="fill" id="progressFill" style="width:0%"></div></div>
+    <p style="text-align:center;font-size:13px;color:var(--text2);margin:4px 0 16px" id="progressText">完成度 0%</p>
+    <div class="card">
+      <p style="font-size:14px;font-weight:500;margin-bottom:8px">📋 各套试卷进度</p>
+      <div id="setProgress"></div>
+    </div>
+  </div>
+
+  <!-- ===== NAV BAR ===== -->
+  <div class="tab-bar">
+    <div class="tab-item active" onclick="switchPage('home')" id="tabHome">
+      <span class="tab-icon">📋</span><span>刷题</span>
+    </div>
+    <div class="tab-item" onclick="switchPage('errors')" id="tabErrors">
+      <span class="tab-icon">📕</span><span>纠错本</span>
+    </div>
+    <div class="tab-item" onclick="switchPage('stats')" id="tabStats">
+      <span class="tab-icon">📊</span><span>统计</span>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==============================
+// DATA
+// ==============================
+let questions = [];
+let currentFilter = 'all';
+let currentQuestion = null;
+let quizSet = [];
+let quizIndex = 0;
+const STORAGE_KEY_DONE = 'exam_done_ids';
+const STORAGE_KEY_ERRORS = 'exam_error_ids';
+const STORAGE_KEY_CORRECT = 'exam_correct_ids';
+
+async function loadQuestions() {
+  try {
+    const resp = await fetch('questions.json');
+    questions = await resp.json();
+  } catch(e) {
+    // fallback: try inline path
+    console.error('Failed to load questions', e);
+  }
+}
+
+function getDoneIds() { try{return JSON.parse(localStorage.getItem(STORAGE_KEY_DONE)||'[]')}catch(e){return[]} }
+function getErrorIds() { try{return JSON.parse(localStorage.getItem(STORAGE_KEY_ERRORS)||'[]')}catch(e){return[]} }
+function getCorrectIds() { try{return JSON.parse(localStorage.getItem(STORAGE_KEY_CORRECT)||'[]')}catch(e){return[]} }
+function setDoneIds(ids) { localStorage.setItem(STORAGE_KEY_DONE, JSON.stringify(ids)) }
+function setErrorIds(ids) { localStorage.setItem(STORAGE_KEY_ERRORS, JSON.stringify(ids)) }
+function setCorrectIds(ids) { localStorage.setItem(STORAGE_KEY_CORRECT, JSON.stringify(ids)) }
+
+function markDone(qid) {
+  let done = getDoneIds();
+  if(!done.includes(qid)){ done.push(qid); setDoneIds(done) }
+}
+function markCorrect(qid) {
+  doneOrCorrect(qid, 'correct');
+  markDone(qid);
+}
+function markError(qid) {
+  doneOrCorrect(qid, 'error');
+  markDone(qid);
+}
+function doneOrCorrect(qid, type) {
+  let errors = getErrorIds();
+  let corrects = getCorrectIds();
+  if(type === 'error') {
+    if(!errors.includes(qid)) errors.push(qid);
+    setErrorIds(errors);
+    corrects = corrects.filter(id => id !== qid);
+    setCorrectIds(corrects);
+  } else {
+    if(!corrects.includes(qid)) corrects.push(qid);
+    setCorrectIds(corrects);
+    errors = errors.filter(id => id !== qid);
+    setErrorIds(errors);
+  }
+}
+function clearErrors() {
+  if(confirm('确定清空纠错本吗？此操作不可恢复。')) {
+    setErrorIds([]);
+    setCorrectIds([]);
+    setDoneIds([]);
+    refreshCurrentPage();
+  }
+}
+function reviewErrors() {
+  let errIds = getErrorIds();
+  if(errIds.length === 0) { alert('纠错本为空，没有错题！'); return; }
+  let errQs = questions.filter(q => errIds.includes(q.id));
+  startQuiz(errQs);
+}
+
+// ==============================
+// FILTER
+// ==============================
+function buildFilterBar() {
+  const sets = [...new Set(questions.map(q => q.set))];
+  const subjects = [...new Set(questions.map(q => q.subject))];
+  let html = '<div class="filter-chip active" onclick="setFilter(\'all\',this)">全部</div>';
+  subjects.forEach(s => {
+    html += `<div class="filter-chip" onclick="setFilter('${s}',this)">${s}</div>`;
+  });
+  sets.forEach(s => {
+    html += `<div class="filter-chip" onclick="setFilter('${s}',this)">${s}</div>`;
+  });
+  document.getElementById('filterBar').innerHTML = html;
+}
+function setFilter(key, el) {
+  currentFilter = key;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  renderHome();
+}
+
+function getFilteredQuestions() {
+  if(currentFilter === 'all') return questions;
+  // check if subject
+  if(currentFilter === '地理' || currentFilter === '生物') return questions.filter(q => q.subject === currentFilter);
+  // set name
+  return questions.filter(q => q.set === currentFilter);
+}
+
+// ==============================
+// RENDER: HOME
+// ==============================
+function renderHome() {
+  const content = document.getElementById('homeContent');
+  let filtered = getFilteredQuestions();
+  let sets = [...new Set(filtered.map(q => q.set))];
+  let html = '';
+  sets.forEach(setName => {
+    let setQs = filtered.filter(q => q.set === setName);
+    let subject = setQs[0].subject;
+    let doneCount = setQs.filter(q => getDoneIds().includes(q.id)).length;
+    let total = setQs.length;
+    html += `<div class="card" onclick="startSetQuiz('${setName}')" style="cursor:pointer">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:15px;font-weight:600;margin-bottom:4px">📝 ${setName}</div>
+          <div style="font-size:12px;color:var(--text2)">
+            <span class="q-subject ${subject==='地理'?'geo':'bio'}">${subject}</span>
+            ${total}题 · 已完成 ${doneCount}题
+          </div>
+        </div>
+        <div style="font-size:24px;color:var(--text2)">›</div>
+      </div>
+      <div class="progress-bar" style="margin-top:10px"><div class="fill" style="width:${(doneCount/total*100)}%"></div></div>
+    </div>`;
+  });
+  // also add random quick start
+  html += `<div class="card" onclick="startRandomQuiz()" style="cursor:pointer;background:linear-gradient(135deg,#E8F0FE,#E8F8E8)">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:15px;font-weight:600;margin-bottom:4px">🎲 随机练习</div>
+        <div style="font-size:12px;color:var(--text2)">从所有题目中随机抽取20道</div>
+      </div>
+      <div style="font-size:24px;color:var(--primary)">›</div>
+    </div>
+  </div>`;
+  html += `<div class="card" onclick="startAllQuiz()" style="cursor:pointer">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:15px;font-weight:600;margin-bottom:4px">📚 全部刷题</div>
+        <div style="font-size:12px;color:var(--text2)">按顺序刷完所有${filtered.length}道题</div>
+      </div>
+      <div style="font-size:24px;color:var(--text2)">›</div>
+    </div>
+  </div>`;
+  content.innerHTML = html;
+}
+
+function startSetQuiz(setName) {
+  let qs = questions.filter(q => q.set === setName);
+  startQuiz(qs);
+}
+function startRandomQuiz() {
+  let pool = getFilteredQuestions();
+  let shuffled = pool.sort(() => Math.random() - 0.5).slice(0, 20);
+  startQuiz(shuffled);
+}
+function startAllQuiz() {
+  startQuiz(getFilteredQuestions());
+}
+function startQuiz(qs) {
+  if(qs.length === 0) { alert('没有可刷的题目'); return; }
+  quizSet = qs;
+  quizIndex = 0;
+  switchPage('quiz');
+  renderQuiz();
+}
+
+// ==============================
+// RENDER: QUIZ
+// ==============================
+function renderQuiz() {
+  const content = document.getElementById('quizContent');
+  if(quizIndex >= quizSet.length) {
+    // quiz done
+    let correctCount = quizSet.filter(q => getCorrectIds().includes(q.id)).length;
+    content.innerHTML = `
+      <div class="card" style="text-align:center;padding:40px 20px">
+        <div style="font-size:56px;margin-bottom:12px">${correctCount >= quizSet.length/2 ? '🎉' : '💪'}</div>
+        <h3 style="margin-bottom:8px">本组刷题完成！</h3>
+        <p style="color:var(--text2);margin-bottom:4px">正确：<b style="color:var(--success)">${correctCount}</b> / ${quizSet.length}</p>
+        <p style="color:var(--text2);margin-bottom:16px">正确率：<b>${Math.round(correctCount/quizSet.length*100)}%</b></p>
+        <button class="next-btn" onclick="switchPage('home')">返回首页</button>
+      </div>`;
+    refreshTabs();
+    return;
+  }
+  let q = quizSet[quizIndex];
+  currentQuestion = q;
+  const letters = ['A','B','C','D'];
+  let optHtml = q.options.map((opt,i) => `
+    <div class="opt" onclick="selectAnswer(${i},this)" id="opt${i}">
+      <span class="letter">${letters[i]}</span>
+      <span>${opt}</span>
+    </div>
+  `).join('');
+  content.innerHTML = `
+    <div class="card">
+      <div class="q-header">
+        <span class="q-subject ${q.subject==='地理'?'geo':'bio'}">${q.subject}</span>
+        <span class="q-num">${q.set} · 第${quizIndex+1}/${quizSet.length}题 · ID:${q.id}</span>
+      </div>
+      <div class="q-text">${q.q}</div>
+      <div class="options">${optHtml}</div>
+      <div id="feedback"></div>
+    </div>
+    <div id="nextArea"></div>
+  `;
+  // scroll to top
+  window.scrollTo(0,0);
+}
+
+function selectAnswer(i, el) {
+  if(currentQuestion === null) return;
+  let q = currentQuestion;
+  let isCorrect = (i === q.ans);
+  // disable all options
+  document.querySelectorAll('.opt').forEach(o => o.classList.add('disabled'));
+  // show correct
+  document.getElementById('opt'+q.ans).classList.add('correct');
+  if(isCorrect) {
+    el.classList.add('correct');
+    markCorrect(q.id);
+    document.getElementById('feedback').innerHTML = `<div class="expl correct">✅ 回答正确！<br>${q.expl}</div>`;
+  } else {
+    el.classList.add('wrong');
+    markError(q.id);
+    document.getElementById('feedback').innerHTML = `<div class="expl wrong">❌ 回答错误！正确答案是 <b>${['A','B','C','D'][q.ans]}</b><br>${q.expl}</div>`;
+  }
+  document.getElementById('nextArea').innerHTML = `
+    <button class="next-btn" onclick="nextQuestion()">
+      ${quizIndex < quizSet.length - 1 ? '下一题 →' : '查看结果'}
+    </button>`;
+}
+
+function nextQuestion() {
+  currentQuestion = null;
+  quizIndex++;
+  renderQuiz();
+  refreshTabs();
+}
+
+// ==============================
+// RENDER: ERRORS
+// ==============================
+function renderErrors() {
+  const container = document.getElementById('errorList');
+  let errIds = getErrorIds();
+  let errQs = questions.filter(q => errIds.includes(q.id));
+  if(errQs.length === 0) {
+    container.innerHTML = `<div class="empty"><div class="icon">🌟</div><p>纠错本为空！<br>做错的题目会自动收集到这里</p></div>`;
+    return;
+  }
+  let html = '';
+  errQs.forEach(q => {
+    html += `<div class="card" style="cursor:pointer" onclick="startErrorQuiz(${q.id})">
+      <div style="display:flex;gap:10px;align-items:flex-start">
+        <span class="q-subject ${q.subject==='地理'?'geo':'bio'}">${q.subject}</span>
+        <div style="flex:1">
+          <div style="font-size:14px;line-height:1.5;margin-bottom:4px">${q.q}</div>
+          <div style="font-size:12px;color:var(--text2)">正确答案：${['A','B','C','D'][q.ans]}</div>
+        </div>
+      </div>
+    </div>`;
+  });
+  container.innerHTML = html;
+}
+
+function startErrorQuiz(qid) {
+  let errQs = questions.filter(q => getErrorIds().includes(q.id));
+  startQuiz(errQs);
+}
+
+// ==============================
+// RENDER: STATS
+// ==============================
+function renderStats() {
+  let doneIds = getDoneIds();
+  let errIds = getErrorIds();
+  let correctIds = getCorrectIds();
+  let total = questions.length;
+  let done = doneIds.length;
+  let correct = correctIds.length;
+  let errors = errIds.length;
+  let pct = total > 0 ? Math.round(done/total*100) : 0;
+
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statDone').textContent = done;
+  document.getElementById('statCorrect').textContent = correct;
+  document.getElementById('statErrors').textContent = errors;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressText').textContent = `完成度 ${pct}%`;
+
+  // per-set progress
+  let sets = [...new Set(questions.map(q => q.set))];
+  let html = '';
+  sets.forEach(setName => {
+    let setQs = questions.filter(q => q.set === setName);
+    let setDone = setQs.filter(q => doneIds.includes(q.id)).length;
+    html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:13px">
+      <span>${setName}</span>
+      <span style="color:var(--text2)">${setDone}/${setQs.length}</span>
+    </div>`;
+  });
+  document.getElementById('setProgress').innerHTML = html;
+}
+
+// ==============================
+// PAGE SWITCHING
+// ==============================
+let currentPage = 'home';
+function switchPage(page) {
+  currentPage = page;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+  if(page === 'home') document.getElementById('tabHome').classList.add('active');
+  if(page === 'errors') document.getElementById('tabErrors').classList.add('active');
+  if(page === 'stats') document.getElementById('tabStats').classList.add('active');
+  refreshCurrentPage();
+  window.scrollTo(0,0);
+}
+function refreshCurrentPage() {
+  if(currentPage === 'home') renderHome();
+  if(currentPage === 'quiz') renderQuiz();
+  if(currentPage === 'errors') renderErrors();
+  if(currentPage === 'stats') renderStats();
+  refreshTabs();
+}
+function refreshTabs() {
+  let errCount = getErrorIds().length;
+  document.getElementById('tabErrors').querySelector('span:last-child').textContent = errCount > 0 ? `纠错本(${errCount})` : '纠错本';
+  document.getElementById('headerBadge').textContent = `共${questions.length}题`;
+}
+
+// ==============================
+// INIT
+// ==============================
+async function init() {
+  await loadQuestions();
+  buildFilterBar();
+  renderHome();
+  renderErrors();
+  renderStats();
+  refreshTabs();
+}
+init();
+</script>
+</body>
+</html>
