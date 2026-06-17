@@ -71,6 +71,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 .mode-chip{flex:1;text-align:center;padding:10px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;transition:.2s}
 .mode-chip.active{border-color:var(--primary);color:var(--primary);background:#E8F0FE}
 .kw{color:var(--danger);font-weight:700}
+.img-area{display:flex;gap:8px;margin-bottom:12px;overflow-x:auto}
+.img-area img{max-width:100%;max-height:280px;border-radius:10px;border:1px solid var(--border);object-fit:contain;cursor:pointer;flex-shrink:0}
+.img-area img.single{max-width:100%}
+.sub-card{background:var(--bg);border-radius:12px;padding:14px;margin-top:10px}
+.sub-card .sub-q{font-size:14px;line-height:1.6;margin-bottom:10px;font-weight:500}
+.sub-card .reveal-btn{padding:8px 16px;border:1.5px dashed var(--primary);border-radius:8px;background:#fff;color:var(--primary);font-size:13px;cursor:pointer;font-weight:500;transition:.2s}
+.sub-card .reveal-btn:active{background:#E8F0FE}
+.sub-card .reveal-btn.done{display:none}
+.sub-card .sub-answer{display:none;margin-top:10px;padding:12px;border-radius:10px;background:#E8F8E8;font-size:14px;line-height:1.6}
+.sub-card .sub-answer .ans-label{font-weight:700;color:#1D7A3A}
+.sub-card .sub-answer .expl-text{color:#555;font-size:13px;margin-top:4px}
+.sub-card .self-btns{display:none;gap:8px;margin-top:10px}
+.sub-card .self-btn{flex:1;padding:10px;border-radius:8px;border:none;font-size:13px;font-weight:600;cursor:pointer;transition:.2s}
+.sub-card .self-btn.correct-btn{background:var(--success);color:#fff}
+.sub-card .self-btn.wrong-btn{background:var(--danger);color:#fff}
+.sub-card .self-btn:active{opacity:.8}
+.sub-card .self-result{display:none;font-size:12px;font-weight:600;margin-top:8px}
 .page{display:none}
 .page.active{display:block}
 </style>
@@ -312,10 +329,19 @@ function startQuiz(qs) {
 // ==============================
 // RENDER: QUIZ
 // ==============================
+function getImagePaths(imgStr) {
+  if(!imgStr) return [];
+  let parts = imgStr.split('-');
+  if(parts.length !== 2) return [];
+  let start = parseInt(parts[0]), end = parseInt(parts[1]);
+  let paths = [];
+  for(let i = start; i <= end; i++) paths.push('images/' + i + '.jpg');
+  return paths;
+}
+
 function renderQuiz() {
   const content = document.getElementById('quizContent');
   if(quizIndex >= quizSet.length) {
-    // quiz done
     let correctCount = quizSet.filter(q => getCorrectIds().includes(q.id)).length;
     content.innerHTML = `
       <div class="card" style="text-align:center;padding:40px 20px">
@@ -330,27 +356,115 @@ function renderQuiz() {
   }
   let q = quizSet[quizIndex];
   currentQuestion = q;
-  const letters = ['A','B','C','D'];
-  let optHtml = q.options.map((opt,i) => `
-    <div class="opt" onclick="selectAnswer(${i},this)" id="opt${i}">
-      <span class="letter">${letters[i]}</span>
-      <span>${opt}</span>
-    </div>
-  `).join('');
-  content.innerHTML = `
-    <div class="card">
-      <div class="q-header">
-        <span class="q-subject ${q.subject==='地理'?'geo':'bio'}">${q.subject}</span>
-        <span class="q-num">${q.set} · 第${quizIndex+1}/${quizSet.length}题 · ID:${q.id}</span>
+
+  // Build image HTML
+  let imgPaths = getImagePaths(q.img);
+  let imgHtml = '';
+  if(imgPaths.length > 0) {
+    let imgs = imgPaths.map(p => `<img src="${p}" alt="题目附图" loading="lazy" class="${imgPaths.length===1?'single':''}" onclick="this.requestFullscreen?this.requestFullscreen():null">`).join('');
+    imgHtml = `<div class="img-area">${imgs}</div>`;
+  }
+
+  if(q.type === '综合') {
+    // Comprehensive question rendering
+    let subHtml = (q.subs||[]).map((sub, i) => `
+      <div class="sub-card" id="sub${i}">
+        <div class="sub-q"><b>(${i+1})</b> ${sub.q.replace(/\n/g,'<br>')}</div>
+        <button class="reveal-btn" id="revealBtn${i}" onclick="revealSubAnswer(${i})">💡 点击显示答案</button>
+        <div class="sub-answer" id="subAns${i}">
+          <div class="ans-label">✅ 答案：${sub.ans}</div>
+          <div class="expl-text">${highlightKeywords(sub.expl)}</div>
+        </div>
+        <div class="self-btns" id="selfBtns${i}">
+          <button class="self-btn correct-btn" onclick="markSelfAssessment(${i}, true)">✓ 我做对了</button>
+          <button class="self-btn wrong-btn" onclick="markSelfAssessment(${i}, false)">✗ 我做错了</button>
+        </div>
+        <div class="self-result" id="selfResult${i}"></div>
       </div>
-      <div class="q-text">${q.q}</div>
-      <div class="options">${optHtml}</div>
-      <div id="feedback"></div>
-    </div>
-    <div id="nextArea"></div>
-  `;
-  // scroll to top
+    `).join('');
+    content.innerHTML = `
+      <div class="card">
+        <div class="q-header">
+          <span class="q-subject ${q.subject==='地理'?'geo':'bio'}">${q.subject} · 综合题</span>
+          <span class="q-num">${q.set} · 第${quizIndex+1}/${quizSet.length}题 · ID:${q.id}</span>
+        </div>
+        ${imgHtml}
+        <div class="q-text">📋 ${q.q}</div>
+        ${subHtml}
+        <div id="feedback"></div>
+      </div>
+      <div id="nextArea"></div>
+    `;
+    // Reset revealed flags (undefined = not yet assessed)
+    window._subRevealed = (q.subs||[]).map(() => false);
+    window._subMarked = (q.subs||[]).map(() => undefined);
+  } else {
+    // Single-choice rendering
+    const letters = ['A','B','C','D'];
+    let optHtml = q.options.map((opt,i) => `
+      <div class="opt" onclick="selectAnswer(${i},this)" id="opt${i}">
+        <span class="letter">${letters[i]}</span>
+        <span>${opt}</span>
+      </div>
+    `).join('');
+    content.innerHTML = `
+      <div class="card">
+        <div class="q-header">
+          <span class="q-subject ${q.subject==='地理'?'geo':'bio'}">${q.subject}</span>
+          <span class="q-num">${q.set} · 第${quizIndex+1}/${quizSet.length}题 · ID:${q.id}</span>
+        </div>
+        ${imgHtml}
+        <div class="q-text">${q.q}</div>
+        <div class="options">${optHtml}</div>
+        <div id="feedback"></div>
+      </div>
+      <div id="nextArea"></div>
+    `;
+  }
   window.scrollTo(0,0);
+}
+
+function revealSubAnswer(i) {
+  document.getElementById('revealBtn'+i).classList.add('done');
+  document.getElementById('subAns'+i).style.display = 'block';
+  document.getElementById('selfBtns'+i).style.display = 'flex';
+  window._subRevealed[i] = true;
+  checkAllSubsDone();
+}
+
+function markSelfAssessment(i, isCorrect) {
+  if(window._subMarked[i] !== undefined) return;
+  window._subMarked[i] = isCorrect;
+  let btnContainer = document.getElementById('selfBtns'+i);
+  btnContainer.style.display = 'none';
+  let resultEl = document.getElementById('selfResult'+i);
+  resultEl.style.display = 'block';
+  if(isCorrect) {
+    resultEl.innerHTML = '<span style="color:var(--success)">✅ 已记录：正确</span>';
+  } else {
+    resultEl.innerHTML = '<span style="color:var(--danger)">❌ 已记录：错误</span>';
+  }
+  checkAllSubsDone();
+}
+
+function checkAllSubsDone() {
+  if(!window._subRevealed || !window._subMarked) return;
+  let allRevealed = window._subRevealed.every(r => r === true);
+  let allMarked = window._subMarked.every(m => m !== undefined);
+  if(allRevealed && allMarked) {
+    // Determine final result: all subs must be correct for the question to be correct
+    let allCorrect = window._subMarked.every(m => m === true);
+    if(allCorrect) {
+      markCorrect(currentQuestion.id);
+    } else {
+      markError(currentQuestion.id);
+    }
+    markDone(currentQuestion.id);
+    document.getElementById('nextArea').innerHTML = `
+      <button class="next-btn" onclick="nextQuestion()">
+        ${quizIndex < quizSet.length - 1 ? '下一题 →' : '查看结果'}
+      </button>`;
+  }
 }
 
 function highlightKeywords(text) {
@@ -400,12 +514,19 @@ function renderErrors() {
   }
   let html = '';
   errQs.forEach(q => {
+    let ansDisplay = '';
+    if(q.type === '综合') {
+      ansDisplay = (q.subs||[]).map(s => s.ans).join('；');
+      ansDisplay = '答案：' + ansDisplay;
+    } else {
+      ansDisplay = '正确答案：' + (['A','B','C','D'][q.ans] || '—');
+    }
     html += `<div class="card" style="cursor:pointer" onclick="startErrorQuiz(${q.id})">
       <div style="display:flex;gap:10px;align-items:flex-start">
-        <span class="q-subject ${q.subject==='地理'?'geo':'bio'}">${q.subject}</span>
+        <span class="q-subject ${q.subject==='地理'?'geo':'bio'}">${q.subject}${q.type==='综合'?'·综合':''}</span>
         <div style="flex:1">
           <div style="font-size:14px;line-height:1.5;margin-bottom:4px">${q.q}</div>
-          <div style="font-size:12px;color:var(--text2)">正确答案：${['A','B','C','D'][q.ans]}</div>
+          <div style="font-size:12px;color:var(--text2)">${ansDisplay}</div>
         </div>
       </div>
     </div>`;
