@@ -37,9 +37,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 .card .expl.wrong{background:#FFF0F0;color:#B71C1C}
 .card .next-btn{display:block;width:100%;padding:12px;background:var(--primary);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;margin-top:16px;cursor:pointer;text-align:center}
 .card .next-btn:active{opacity:.8}
-#nextArea{max-width:500px;margin:0 auto;padding:0 16px}
-#nextArea .next-btn{display:block;width:100%;padding:12px;background:var(--primary);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;margin-top:16px;cursor:pointer;text-align:center}
-#nextArea .next-btn:active{opacity:.8}
+#nextArea{max-width:500px;margin:0 auto;padding:0 16px;display:flex;gap:10px}
+.nav-btn{flex:1;padding:12px;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;text-align:center;transition:.2s}
+.nav-btn:active{opacity:.8}
+.nav-btn.next-btn{background:var(--primary);color:#fff}
+.nav-btn.prev-btn{background:#fff;color:var(--primary);border:1.5px solid var(--primary)}
+.nav-btn:disabled{opacity:.35;pointer-events:none}
 .empty{text-align:center;padding:40px 20px;color:var(--text2)}
 .empty .icon{font-size:48px;margin-bottom:12px}
 .empty p{font-size:15px;line-height:1.6}
@@ -397,7 +400,7 @@ function renderQuiz() {
         ${subHtml}
         <div id="feedback"></div>
       </div>
-      <div id="nextArea"></div>
+      ${renderNavButtons()}
     `;
     // Reset revealed flags (undefined = not yet assessed)
     window._subRevealed = (q.subs||[]).map(() => false);
@@ -422,7 +425,7 @@ function renderQuiz() {
         <div class="options">${optHtml}</div>
         <div id="feedback"></div>
       </div>
-      <div id="nextArea"></div>
+      ${renderNavButtons()}
     `;
   }
   window.scrollTo(0,0);
@@ -464,11 +467,26 @@ function checkAllSubsDone() {
       markError(currentQuestion.id);
     }
     markDone(currentQuestion.id);
-    document.getElementById('nextArea').innerHTML = `
-      <button class="next-btn" onclick="nextQuestion()">
-        ${quizIndex < quizSet.length - 1 ? '下一题 →' : '查看结果'}
-      </button>`;
+    // Navigation already rendered, no need to replace
   }
+}
+
+function renderNavButtons() {
+  let prevDisabled = quizIndex === 0 ? 'disabled' : '';
+  let prevOnClick = quizIndex === 0 ? '' : `onclick="prevQuestion()"`;
+  let nextLabel = quizIndex < quizSet.length - 1 ? '下一题 →' : '查看结果';
+  return `<div id="nextArea" style="max-width:500px;margin:0 auto;padding:0 16px;display:flex;gap:10px">
+    <button class="nav-btn prev-btn" ${prevOnClick} ${prevDisabled}>← 上一题</button>
+    <button class="nav-btn next-btn" onclick="nextQuestion()">${nextLabel}</button>
+  </div>`;
+}
+
+function prevQuestion() {
+  if(quizIndex <= 0) return;
+  currentQuestion = null;
+  quizIndex--;
+  renderQuiz();
+  refreshTabs();
 }
 
 function highlightKeywords(text) {
@@ -492,10 +510,7 @@ function selectAnswer(i, el) {
     markError(q.id);
     document.getElementById('feedback').innerHTML = `<div class="expl wrong">正确答案是 <b>${['A','B','C','D'][q.ans]}</b><br>${highlightKeywords(q.expl)}</div>`;
   }
-  document.getElementById('nextArea').innerHTML = `
-    <button class="next-btn" onclick="nextQuestion()">
-      ${quizIndex < quizSet.length - 1 ? '下一题 →' : '查看结果'}
-    </button>`;
+  // Navigation already rendered, no need to replace
 }
 
 function nextQuestion() {
