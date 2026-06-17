@@ -360,19 +360,13 @@ function renderQuiz() {
   let q = quizSet[quizIndex];
   currentQuestion = q;
 
-  // Build image HTML: priority to cropped diagram, fallback to full source images
+  // Only show image when question has a specific diagram
   let imgHtml = '';
   if(q.diagram) {
     imgHtml = `<div class="diagram-area">
       <img src="${q.diagram}" alt="题目示意图" loading="lazy" onclick="this.requestFullscreen?this.requestFullscreen():null">
       <div class="diagram-label">📐 题目示意图</div>
     </div>`;
-  } else {
-    let imgPaths = getImagePaths(q.img);
-    if(imgPaths.length > 0) {
-      let imgs = imgPaths.map(p => `<img src="${p}" alt="题目附图" loading="lazy" class="${imgPaths.length===1?'single':''}" onclick="this.requestFullscreen?this.requestFullscreen():null">`).join('');
-      imgHtml = `<div class="img-area">${imgs}</div>`;
-    }
   }
 
   if(q.type === '综合') {
